@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  webclipper:
+    build: .
+    container_name: webclipper
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/data
+      # Mount your recordings folders here:
+      # - /path/to/your/recordings:/mnt/recordings
+    restart: unless-stopped
+    environment:
+      - TZ=America/New_York

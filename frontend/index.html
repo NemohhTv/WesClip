@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebClipper</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:        #0b0e14;
+  --bg-card:   #131720;
+  --bg-surface:#1a1f2e;
+  --bg-hover:  #222939;
+  --bg-input:  #0f1219;
+  --border:    #2a3042;
+  --border-lt: #353d54;
+  --text:      #e2e8f0;
+  --text-dim:  #8892a8;
+  --text-muted:#5a6478;
+  --accent:    #6c5ce7;
+  --accent-lt: #8577ed;
+  --accent-bg: rgba(108,92,231,.12);
+  --green:     #00d68f;
+  --green-bg:  rgba(0,214,143,.1);
+  --red:       #ff6b6b;
+  --red-bg:    rgba(255,107,107,.1);
+  --orange:    #ffa64d;
+  --orange-bg: rgba(255,166,77,.1);
+  --blue:      #54a0ff;
+  --radius:    10px;
+  --radius-sm: 6px;
+  --shadow:    0 4px 24px rgba(0,0,0,.35);
+  --transition:all .2s ease;
+  --font:      'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+}
+html{font-size:14px}
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+button{font-family:inherit;cursor:pointer;border:none;outline:none}
+input,select,textarea{font-family:inherit;outline:none}
+a{color:var(--accent-lt);text-decoration:none}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-lt)}
+
+/* ── Layout ────────────────────────────────────────────────────────────── */
+.app{display:flex;flex-direction:column;min-height:100vh}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.header{
+  background:var(--bg-card);
+  border-bottom:1px solid var(--border);
+  padding:0 24px;
+  height:56px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.logo{
+  display:flex;align-items:center;gap:10px;
+  font-size:1.2rem;font-weight:700;letter-spacing:-.5px;
+}
+.logo-icon{
+  width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,var(--accent),#a855f7);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;color:#fff;font-weight:800;
+}
+.nav{display:flex;gap:2px}
+.nav-btn{
+  padding:8px 18px;border-radius:var(--radius-sm);
+  background:transparent;color:var(--text-dim);
+  font-weight:500;font-size:.92rem;
+  transition:var(--transition);
+  position:relative;
+}
+.nav-btn:hover{color:var(--text);background:var(--bg-hover)}
+.nav-btn.active{color:var(--accent-lt);background:var(--accent-bg)}
+.nav-btn.active::after{
+  content:'';position:absolute;bottom:-1px;left:18px;right:18px;
+  height:2px;background:var(--accent);border-radius:1px;
+}
+.header-actions{display:flex;gap:8px;align-items:center}
+
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:var(--radius-sm);
+  font-size:.85rem;font-weight:500;
+  transition:var(--transition);
+  white-space:nowrap;
+}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-lt);transform:translateY(-1px);box-shadow:0 4px 12px rgba(108,92,231,.3)}
+.btn-secondary{background:var(--bg-surface);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--bg-hover);border-color:var(--border-lt)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(255,107,107,.2)}
+.btn-danger:hover{background:rgba(255,107,107,.2)}
+.btn-success{background:var(--green-bg);color:var(--green);border:1px solid rgba(0,214,143,.2)}
+.btn-success:hover{background:rgba(0,214,143,.2)}
+.btn-ghost{background:transparent;color:var(--text-dim);padding:6px 10px}
+.btn-ghost:hover{color:var(--text);background:var(--bg-hover)}
+.btn-sm{padding:5px 10px;font-size:.8rem}
+.btn-icon{padding:6px 8px;font-size:1rem}
+.btn:disabled{opacity:.4;pointer-events:none}
+
+/* ── Toolbar ───────────────────────────────────────────────────────────── */
+.toolbar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:14px 24px;
+  background:var(--bg-card);
+  border-bottom:1px solid var(--border);
+}
+.toolbar-group{display:flex;gap:6px;align-items:center}
+.toolbar-sep{width:1px;height:24px;background:var(--border);margin:0 6px}
+.source-filter{
+  padding:7px 12px;border-radius:var(--radius-sm);
+  background:var(--bg-input);border:1px solid var(--border);
+  color:var(--text);font-size:.85rem;
+  min-width:180px;
+}
+.source-filter:focus{border-color:var(--accent)}
+
+/* ── Content ───────────────────────────────────────────────────────────── */
+.content{flex:1;padding:20px 24px}
+
+/* ── Cards grid ────────────────────────────────────────────────────────── */
+.card-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:16px;
+}
+.card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  transition:var(--transition);
+  position:relative;
+}
+.card:hover{border-color:var(--border-lt);transform:translateY(-2px);box-shadow:var(--shadow)}
+.card-thumb{
+  width:100%;aspect-ratio:16/9;
+  background:var(--bg-surface);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;position:relative;
+}
+.card-thumb img{width:100%;height:100%;object-fit:cover}
+.card-thumb-placeholder{color:var(--text-muted);font-size:2rem}
+.card-badge{
+  position:absolute;top:8px;right:8px;
+  padding:2px 8px;border-radius:4px;
+  font-size:.7rem;font-weight:600;text-transform:uppercase;
+  backdrop-filter:blur(8px);
+}
+.badge-mkv{background:rgba(255,166,77,.85);color:#1a1a1a}
+.badge-mp4{background:rgba(0,214,143,.8);color:#1a1a1a}
+.badge-other{background:rgba(84,160,255,.8);color:#1a1a1a}
+.card-body{padding:12px 14px}
+.card-name{
+  font-weight:600;font-size:.9rem;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  margin-bottom:6px;
+}
+.card-meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:10px}
+.card-meta span{font-size:.78rem;color:var(--text-dim)}
+.card-meta .label{
+  background:var(--accent-bg);color:var(--accent-lt);
+  padding:1px 7px;border-radius:4px;font-size:.72rem;font-weight:500;
+}
+.card-actions{display:flex;gap:6px;flex-wrap:wrap}
+.card-select{
+  position:absolute;top:8px;left:8px;z-index:2;
+  width:20px;height:20px;accent-color:var(--accent);cursor:pointer;
+}
+
+/* ── Empty state ───────────────────────────────────────────────────────── */
+.empty{
+  text-align:center;padding:80px 20px;
+  color:var(--text-dim);
+}
+.empty-icon{font-size:3rem;margin-bottom:16px;opacity:.5}
+.empty h3{font-size:1.1rem;margin-bottom:8px;color:var(--text)}
+.empty p{max-width:400px;margin:0 auto;line-height:1.6}
+
+/* ── Modal ─────────────────────────────────────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;z-index:1000;
+  background:rgba(0,0,0,.7);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;
+  transition:opacity .25s ease;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  box-shadow:0 24px 80px rgba(0,0,0,.5);
+  max-height:92vh;max-width:95vw;
+  overflow:hidden;
+  display:flex;flex-direction:column;
+  transform:scale(.95);
+  transition:transform .25s ease;
+}
+.modal-overlay.open .modal{transform:scale(1)}
+.modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.modal-header h2{font-size:1.05rem;font-weight:600}
+.modal-close{
+  width:32px;height:32px;border-radius:var(--radius-sm);
+  background:transparent;color:var(--text-dim);font-size:1.2rem;
+  display:flex;align-items:center;justify-content:center;
+  transition:var(--transition);
+}
+.modal-close:hover{background:var(--bg-hover);color:var(--text)}
+.modal-body{overflow-y:auto;flex:1}
+
+/* ── Editor modal ──────────────────────────────────────────────────────── */
+.editor-modal .modal{width:1200px}
+.editor-layout{display:flex;min-height:520px}
+.editor-main{flex:1;padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.editor-sidebar{
+  width:320px;flex-shrink:0;
+  border-left:1px solid var(--border);
+  padding:20px;overflow-y:auto;
+  display:flex;flex-direction:column;gap:16px;
+}
+
+/* Video player area */
+.player-wrap{
+  background:#000;border-radius:var(--radius);overflow:hidden;
+  position:relative;aspect-ratio:16/9;
+}
+.player-wrap video{width:100%;height:100%;display:block}
+.player-loading{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.6);color:var(--text-dim);
+  font-size:.9rem;
+}
+
+/* Transport controls */
+.transport{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 0;
+}
+.transport .btn-icon{font-size:1.1rem;padding:6px 10px}
+.time-display{
+  font-size:.82rem;color:var(--text-dim);
+  font-variant-numeric:tabular-nums;
+  min-width:120px;text-align:center;
+}
+
+/* Seek bar */
+.seek-container{position:relative;flex:1;height:36px;display:flex;align-items:center}
+.seek-track{
+  width:100%;height:4px;border-radius:2px;
+  background:var(--bg-surface);cursor:pointer;
+  position:relative;
+}
+.seek-fill{
+  position:absolute;left:0;top:0;height:100%;border-radius:2px;
+  background:var(--accent);pointer-events:none;
+}
+.seek-track:hover{height:6px;margin-top:-1px}
+.trim-region{
+  position:absolute;top:-2px;height:calc(100% + 4px);
+  background:rgba(108,92,231,.15);
+  border-left:2px solid var(--accent);
+  border-right:2px solid var(--accent);
+  pointer-events:none;
+}
+.seek-handle{
+  position:absolute;top:50%;transform:translate(-50%,-50%);
+  width:14px;height:14px;border-radius:50%;
+  background:var(--accent);border:2px solid #fff;
+  cursor:grab;box-shadow:0 2px 8px rgba(0,0,0,.3);
+  z-index:2;
+}
+
+/* Trim controls */
+.trim-controls{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+
+/* Sidebar form fields */
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:.78rem;font-weight:500;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px}
+.field input,.field select{
+  padding:8px 12px;border-radius:var(--radius-sm);
+  background:var(--bg-input);border:1px solid var(--border);
+  color:var(--text);font-size:.85rem;
+}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+
+/* Audio tracks */
+.audio-tracks{display:flex;flex-direction:column;gap:8px}
+.audio-track{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 10px;border-radius:var(--radius-sm);
+  background:var(--bg-surface);
+}
+.audio-track input[type="checkbox"]{accent-color:var(--accent)}
+.audio-track .track-label{flex:1;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.audio-track .gain-input{
+  width:60px;padding:4px 6px;border-radius:4px;
+  background:var(--bg-input);border:1px solid var(--border);
+  color:var(--text);font-size:.8rem;text-align:center;
+}
+
+/* ── Folder browser modal ──────────────────────────────────────────────── */
+.browser-modal .modal{width:560px}
+.folder-list{max-height:360px;overflow-y:auto;padding:12px 16px}
+.folder-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;border-radius:var(--radius-sm);
+  cursor:pointer;transition:var(--transition);
+  font-size:.9rem;
+}
+.folder-item:hover{background:var(--bg-hover)}
+.folder-item .icon{color:var(--orange);width:20px}
+.folder-current{
+  padding:10px 16px;
+  background:var(--bg-surface);
+  border-bottom:1px solid var(--border);
+  font-size:.82rem;color:var(--text-dim);
+  display:flex;align-items:center;gap:8px;
+}
+.folder-actions{
+  padding:12px 16px;border-top:1px solid var(--border);
+  display:flex;justify-content:flex-end;gap:8px;
+}
+
+/* ── Settings panel ────────────────────────────────────────────────────── */
+.settings-panel{
+  max-width:600px;
+  margin:0 auto;
+  display:flex;flex-direction:column;gap:20px;
+}
+.settings-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:20px;
+}
+.settings-card h3{font-size:.95rem;margin-bottom:14px;font-weight:600}
+.settings-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 0;
+}
+.settings-row label{font-size:.88rem;color:var(--text-dim)}
+.settings-row input,.settings-row select{
+  padding:6px 10px;border-radius:var(--radius-sm);
+  background:var(--bg-input);border:1px solid var(--border);
+  color:var(--text);font-size:.85rem;width:200px;
+}
+.toggle{
+  width:42px;height:24px;border-radius:12px;
+  background:var(--border);cursor:pointer;
+  position:relative;transition:var(--transition);
+}
+.toggle.on{background:var(--accent)}
+.toggle::after{
+  content:'';position:absolute;top:3px;left:3px;
+  width:18px;height:18px;border-radius:50%;
+  background:#fff;transition:var(--transition);
+}
+.toggle.on::after{left:21px}
+
+/* ── Source list ────────────────────────────────────────────────────────── */
+.source-list{display:flex;flex-direction:column;gap:8px}
+.source-item{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 14px;border-radius:var(--radius-sm);
+  background:var(--bg-surface);
+}
+.source-item .s-label{font-weight:500;min-width:100px}
+.source-item .s-path{flex:1;font-size:.82rem;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── Clips list ────────────────────────────────────────────────────────── */
+.clip-card{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 18px;
+  display:flex;align-items:center;gap:16px;
+  transition:var(--transition);
+}
+.clip-card:hover{border-color:var(--border-lt)}
+.clip-card .clip-info{flex:1;min-width:0}
+.clip-card .clip-name{font-weight:600;font-size:.9rem;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.clip-card .clip-meta{font-size:.78rem;color:var(--text-dim)}
+.clips-list{display:flex;flex-direction:column;gap:10px}
+
+/* ── Jobs sidebar ──────────────────────────────────────────────────────── */
+.jobs-panel{
+  position:fixed;right:0;top:56px;bottom:0;width:340px;
+  background:var(--bg-card);border-left:1px solid var(--border);
+  transform:translateX(100%);transition:transform .3s ease;
+  z-index:90;overflow-y:auto;
+}
+.jobs-panel.open{transform:translateX(0)}
+.jobs-panel-header{
+  padding:16px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.jobs-panel-header h3{font-size:.95rem;font-weight:600}
+.job-item{
+  padding:14px 18px;border-bottom:1px solid var(--border);
+}
+.job-item .job-status{
+  display:inline-block;padding:2px 8px;border-radius:4px;
+  font-size:.72rem;font-weight:600;text-transform:uppercase;
+  margin-bottom:6px;
+}
+.job-status.running{background:var(--accent-bg);color:var(--accent-lt)}
+.job-status.done{background:var(--green-bg);color:var(--green)}
+.job-status.failed{background:var(--red-bg);color:var(--red)}
+.job-status.pending{background:var(--bg-surface);color:var(--text-dim)}
+.job-progress{
+  width:100%;height:4px;border-radius:2px;
+  background:var(--bg-surface);margin:8px 0;overflow:hidden;
+}
+.job-progress-fill{height:100%;border-radius:2px;background:var(--accent);transition:width .3s ease}
+.job-files{font-size:.78rem;color:var(--text-dim);margin-top:6px}
+.job-file-line{padding:2px 0}
+.job-file-line.done{color:var(--green)}
+.job-file-line.failed{color:var(--red)}
+
+/* ── Toast ─────────────────────────────────────────────────────────────── */
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:8px}
+.toast{
+  padding:12px 18px;border-radius:var(--radius-sm);
+  font-size:.85rem;font-weight:500;
+  box-shadow:var(--shadow);
+  animation:toastIn .3s ease;
+  max-width:360px;
+}
+.toast.success{background:var(--green);color:#1a1a1a}
+.toast.error{background:var(--red);color:#fff}
+.toast.info{background:var(--accent);color:#fff}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Spinner ───────────────────────────────────────────────────────────── */
+.spinner{
+  width:20px;height:20px;border:2px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin .6s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media(max-width:900px){
+  .editor-layout{flex-direction:column}
+  .editor-sidebar{width:100%;border-left:none;border-top:1px solid var(--border)}
+  .editor-modal .modal{width:95vw}
+}
+@media(max-width:600px){
+  .card-grid{grid-template-columns:1fr}
+  .toolbar{padding:10px 14px}
+  .content{padding:14px}
+  .header{padding:0 14px}
+}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">W</div>
+      <span>WebClipper</span>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" data-tab="recordings" onclick="switchTab('recordings')">Recordings</button>
+      <button class="nav-btn" data-tab="clips" onclick="switchTab('clips')">Clips</button>
+      <button class="nav-btn" data-tab="settings" onclick="switchTab('settings')">Settings</button>
+    </nav>
+    <div class="header-actions">
+      <button class="btn btn-ghost btn-icon" onclick="toggleJobsPanel()" title="Remux Jobs" id="jobs-btn">
+        &#9881;
+      </button>
+    </div>
+  </header>
+
+  <!-- Recordings toolbar -->
+  <div class="toolbar" id="toolbar-recordings">
+    <div class="toolbar-group">
+      <select class="source-filter" id="source-filter" onchange="loadRecordings()">
+        <option value="">All Sources</option>
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="loadRecordings()">&#x21bb; Reload</button>
+    </div>
+    <div class="toolbar-sep"></div>
+    <div class="toolbar-group">
+      <button class="btn btn-secondary btn-sm" onclick="selectAllRecordings()">Select All</button>
+      <button class="btn btn-secondary btn-sm" onclick="deselectAllRecordings()">Deselect</button>
+    </div>
+    <div class="toolbar-sep"></div>
+    <div class="toolbar-group">
+      <button class="btn btn-success btn-sm" onclick="remuxSelected()">Remux Selected</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteSelected()">Delete Selected</button>
+    </div>
+  </div>
+
+  <!-- Clips toolbar -->
+  <div class="toolbar" id="toolbar-clips" style="display:none">
+    <div class="toolbar-group">
+      <button class="btn btn-secondary btn-sm" onclick="loadClips()">&#x21bb; Reload</button>
+    </div>
+    <div class="toolbar-sep"></div>
+    <div class="toolbar-group">
+      <button class="btn btn-secondary btn-sm" onclick="selectAllClips()">Select All</button>
+      <button class="btn btn-secondary btn-sm" onclick="deselectAllClips()">Deselect</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteSelectedClips()">Delete Selected</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <main class="content">
+    <!-- Recordings page -->
+    <div id="page-recordings">
+      <div class="card-grid" id="recordings-grid"></div>
+    </div>
+
+    <!-- Clips page -->
+    <div id="page-clips" style="display:none">
+      <div class="clips-list" id="clips-list"></div>
+    </div>
+
+    <!-- Settings page -->
+    <div id="page-settings" style="display:none">
+      <div class="settings-panel">
+        <div class="settings-card">
+          <h3>Sources</h3>
+          <div class="source-list" id="source-list"></div>
+          <div style="margin-top:14px;display:flex;gap:8px;align-items:center">
+            <input type="text" id="new-source-label" placeholder="Label" style="flex:1;padding:8px 12px;border-radius:var(--radius-sm);background:var(--bg-input);border:1px solid var(--border);color:var(--text);font-size:.85rem">
+            <input type="text" id="new-source-path" placeholder="Path" style="flex:2;padding:8px 12px;border-radius:var(--radius-sm);background:var(--bg-input);border:1px solid var(--border);color:var(--text);font-size:.85rem" readonly>
+            <button class="btn btn-secondary btn-sm" onclick="openFolderBrowser('source')">Browse</button>
+            <button class="btn btn-primary btn-sm" onclick="addSource()">Add</button>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <h3>General</h3>
+          <div class="settings-row">
+            <label>Auto Refresh</label>
+            <div class="toggle" id="toggle-autorefresh" onclick="toggleAutoRefresh()"></div>
+          </div>
+          <div class="settings-row">
+            <label>Refresh Interval (sec)</label>
+            <input type="number" id="refresh-interval" min="5" max="300" value="30" onchange="saveSettings()">
+          </div>
+          <div class="settings-row">
+            <label>Clips Output Folder</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" id="clips-folder" readonly style="width:200px">
+              <button class="btn btn-secondary btn-sm" onclick="openFolderBrowser('clips')">Browse</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Editor Modal -->
+<div class="modal-overlay editor-modal" id="editor-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="editor-title">Editor</h2>
+      <button class="modal-close" onclick="closeEditor()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="editor-layout">
+        <div class="editor-main">
+          <!-- Player -->
+          <div class="player-wrap" id="player-wrap">
+            <video id="editor-video" preload="auto"></video>
+            <div class="player-loading" id="player-loading">Preparing preview...</div>
+          </div>
+
+          <!-- Seek bar -->
+          <div class="seek-container" id="seek-container">
+            <div class="seek-track" id="seek-track">
+              <div class="seek-fill" id="seek-fill"></div>
+              <div class="trim-region" id="trim-region" style="display:none"></div>
+              <div class="seek-handle" id="seek-handle"></div>
+            </div>
+          </div>
+
+          <!-- Transport -->
+          <div class="transport">
+            <button class="btn btn-ghost btn-icon" onclick="editorSeek(-5)" title="-5s">&#x23EA;</button>
+            <button class="btn btn-ghost btn-icon" id="play-btn" onclick="togglePlay()" title="Play/Pause">&#x25B6;</button>
+            <button class="btn btn-ghost btn-icon" onclick="editorSeek(5)" title="+5s">&#x23E9;</button>
+            <div class="time-display" id="time-display">0:00.0 / 0:00.0</div>
+          </div>
+
+          <!-- Trim controls -->
+          <div class="trim-controls">
+            <button class="btn btn-secondary btn-sm" onclick="setTrimStart()">Set Start</button>
+            <button class="btn btn-secondary btn-sm" onclick="setTrimEnd()">Set End</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearTrim()">Clear Trim</button>
+            <span id="trim-display" style="font-size:.82rem;color:var(--text-dim);margin-left:8px"></span>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="editor-sidebar">
+          <div class="field">
+            <label>Clip Title</label>
+            <input type="text" id="clip-title" placeholder="My Clip">
+          </div>
+          <div class="field">
+            <label>Game</label>
+            <input type="text" id="clip-game" placeholder="Game name">
+          </div>
+          <div class="field">
+            <label>Export Mode</label>
+            <select id="clip-mode">
+              <option value="fast">Fast Cut (Stream Copy)</option>
+              <option value="accurate">Accurate (Re-encode)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Container</label>
+            <select id="clip-container">
+              <option value="mp4">MP4</option>
+              <option value="mkv">MKV</option>
+              <option value="mov">MOV</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Audio Mode</label>
+            <select id="clip-audio-mode">
+              <option value="keep">Keep Tracks Separate</option>
+              <option value="mix">Mix into One Track</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Start / End (seconds)</label>
+            <div style="display:flex;gap:6px">
+              <input type="number" id="trim-start-input" step="0.1" min="0" placeholder="0.0" style="flex:1" onchange="onTrimInputChange()">
+              <input type="number" id="trim-end-input" step="0.1" min="0" placeholder="0.0" style="flex:1" onchange="onTrimInputChange()">
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Audio Tracks</label>
+            <div class="audio-tracks" id="audio-tracks">
+              <div style="font-size:.82rem;color:var(--text-dim)">Loading...</div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" onclick="createClip()" style="margin-top:auto" id="create-clip-btn">
+            Create Clip
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Folder Browser Modal -->
+<div class="modal-overlay browser-modal" id="browser-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Browse Folder</h2>
+      <button class="modal-close" onclick="closeFolderBrowser()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="folder-current" id="folder-current">/</div>
+      <div class="folder-list" id="folder-list"></div>
+    </div>
+    <div class="folder-actions">
+      <button class="btn btn-ghost" onclick="folderGoUp()">Up</button>
+      <button class="btn btn-secondary" onclick="closeFolderBrowser()">Cancel</button>
+      <button class="btn btn-primary" onclick="selectFolder()">Select This Folder</button>
+    </div>
+  </div>
+</div>
+
+<!-- Jobs Panel -->
+<div class="jobs-panel" id="jobs-panel">
+  <div class="jobs-panel-header">
+    <h3>Remux Jobs</h3>
+    <button class="modal-close" onclick="toggleJobsPanel()">&times;</button>
+  </div>
+  <div id="jobs-list"></div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   WebClipper – Frontend
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+// ── State ────────────────────────────────────────────────────────────────
+
+let recordings = [];
+let clips = [];
+let sources = [];
+let settings = {};
+let selectedRecordings = new Set();
+let selectedClips = new Set();
+let currentTab = 'recordings';
+
+// Editor state
+let editorFile = null;
+let editorInfo = null;
+let trimStart = null;
+let trimEnd = null;
+let videoDuration = 0;
+let seekDragging = false;
+
+// Folder browser state
+let browserPath = '/';
+let browserTarget = 'source'; // 'source' or 'clips'
+
+// Jobs polling
+let jobsPollTimer = null;
+
+// ── API helpers ──────────────────────────────────────────────────────────
+
+async function api(url, opts = {}) {
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json', ...opts.headers },
+    ...opts,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || res.statusText);
+  }
+  return res.json();
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// ── Formatting ───────────────────────────────────────────────────────────
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
+  return (bytes / 1073741824).toFixed(2) + ' GB';
+}
+
+function formatDate(ts) {
+  return new Date(ts * 1000).toLocaleDateString(undefined, {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
+function formatTime(sec) {
+  if (!sec || isNaN(sec)) return '0:00.0';
+  const m = Math.floor(sec / 60);
+  const s = (sec % 60).toFixed(1);
+  return `${m}:${s.padStart(4, '0')}`;
+}
+
+// ── Tab switching ────────────────────────────────────────────────────────
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('page-recordings').style.display = tab === 'recordings' ? '' : 'none';
+  document.getElementById('page-clips').style.display = tab === 'clips' ? '' : 'none';
+  document.getElementById('page-settings').style.display = tab === 'settings' ? '' : 'none';
+  document.getElementById('toolbar-recordings').style.display = tab === 'recordings' ? '' : 'none';
+  document.getElementById('toolbar-clips').style.display = tab === 'clips' ? '' : 'none';
+
+  if (tab === 'recordings') loadRecordings();
+  if (tab === 'clips') loadClips();
+  if (tab === 'settings') loadSettings();
+}
+
+// ── Sources & Settings ───────────────────────────────────────────────────
+
+async function loadSources() {
+  try {
+    sources = await api('/api/sources');
+    renderSourceFilter();
+    renderSourceList();
+  } catch (e) { console.error(e); }
+}
+
+function renderSourceFilter() {
+  const sel = document.getElementById('source-filter');
+  const val = sel.value;
+  sel.innerHTML = '<option value="">All Sources</option>';
+  sources.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.path;
+    opt.textContent = s.label;
+    sel.appendChild(opt);
+  });
+  sel.value = val;
+}
+
+function renderSourceList() {
+  const el = document.getElementById('source-list');
+  if (!sources.length) {
+    el.innerHTML = '<div style="color:var(--text-dim);font-size:.85rem;padding:8px 0">No sources added yet.</div>';
+    return;
+  }
+  el.innerHTML = sources.map(s => `
+    <div class="source-item">
+      <span class="s-label">${esc(s.label)}</span>
+      <span class="s-path">${esc(s.path)}</span>
+      <button class="btn btn-danger btn-sm" onclick="removeSource('${esc(s.path)}')">Remove</button>
+    </div>
+  `).join('');
+}
+
+async function addSource() {
+  const label = document.getElementById('new-source-label').value.trim();
+  const path = document.getElementById('new-source-path').value.trim();
+  if (!label || !path) return toast('Label and path required', 'error');
+  try {
+    await api('/api/sources', { method: 'POST', body: JSON.stringify({ label, path }) });
+    document.getElementById('new-source-label').value = '';
+    document.getElementById('new-source-path').value = '';
+    toast('Source added', 'success');
+    await loadSources();
+  } catch (e) { toast('Failed: ' + e.message, 'error'); }
+}
+
+async function removeSource(path) {
+  if (!confirm('Remove this source?')) return;
+  try {
+    await api('/api/sources?path=' + encodeURIComponent(path), { method: 'DELETE' });
+    toast('Source removed', 'success');
+    await loadSources();
+  } catch (e) { toast('Failed: ' + e.message, 'error'); }
+}
+
+async function loadSettings() {
+  try {
+    settings = await api('/api/settings');
+    const toggle = document.getElementById('toggle-autorefresh');
+    toggle.classList.toggle('on', settings.auto_refresh);
+    document.getElementById('refresh-interval').value = settings.refresh_interval;
+    document.getElementById('clips-folder').value = settings.clips_folder;
+    await loadSources();
+  } catch (e) { console.error(e); }
+}
+
+async function saveSettings() {
+  try {
+    await api('/api/settings', {
+      method: 'PUT',
+      body: JSON.stringify({
+        auto_refresh: document.getElementById('toggle-autorefresh').classList.contains('on'),
+        refresh_interval: parseInt(document.getElementById('refresh-interval').value) || 30,
+        clips_folder: document.getElementById('clips-folder').value,
+      }),
+    });
+    toast('Settings saved', 'success');
+  } catch (e) { toast('Failed: ' + e.message, 'error'); }
+}
+
+function toggleAutoRefresh() {
+  document.getElementById('toggle-autorefresh').classList.toggle('on');
+  saveSettings();
+}
+
+// ── Recordings ───────────────────────────────────────────────────────────
+
+async function loadRecordings() {
+  const filter = document.getElementById('source-filter').value;
+  const url = filter ? `/api/recordings?source=${encodeURIComponent(filter)}` : '/api/recordings';
+  try {
+    recordings = await api(url);
+    renderRecordings();
+  } catch (e) {
+    toast('Failed to load recordings', 'error');
+  }
+}
+
+function renderRecordings() {
+  const grid = document.getElementById('recordings-grid');
+  if (!recordings.length) {
+    grid.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        <div class="empty-icon">&#127910;</div>
+        <h3>No recordings found</h3>
+        <p>Add a source folder in Settings, then reload.</p>
+      </div>`;
+    return;
+  }
+  grid.innerHTML = recordings.map((r, i) => {
+    const ext = r.extension.replace('.', '').toUpperCase();
+    const badgeClass = r.is_mkv ? 'badge-mkv' : (ext === 'MP4' ? 'badge-mp4' : 'badge-other');
+    return `
+    <div class="card" data-index="${i}">
+      <input type="checkbox" class="card-select" ${selectedRecordings.has(r.path) ? 'checked' : ''}
+             onchange="toggleRecordingSelect('${esc(r.path)}', this.checked)">
+      <div class="card-thumb" id="thumb-${i}">
+        <span class="card-thumb-placeholder">&#9654;</span>
+      </div>
+      <span class="card-badge ${badgeClass}">${ext}</span>
+      <div class="card-body">
+        <div class="card-name" title="${esc(r.name)}">${esc(r.name)}</div>
+        <div class="card-meta">
+          <span class="label">${esc(r.source)}</span>
+          <span>${formatSize(r.size)}</span>
+          <span>${formatDate(r.modified)}</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-primary btn-sm" onclick="openEditor('${esc(r.path)}')">Open Editor</button>
+          ${r.is_mkv ? `<button class="btn btn-success btn-sm" onclick="remuxSingle('${esc(r.path)}')">Remux</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Load thumbnails lazily
+  recordings.forEach((r, i) => loadThumb(r.path, i));
+}
+
+async function loadThumb(path, idx) {
+  try {
+    const res = await fetch(`/api/recordings/thumbnail?path=${encodeURIComponent(path)}`);
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const el = document.getElementById(`thumb-${idx}`);
+      if (el) el.innerHTML = `<img src="${url}" alt="thumb" loading="lazy">`;
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function toggleRecordingSelect(path, checked) {
+  if (checked) selectedRecordings.add(path); else selectedRecordings.delete(path);
+}
+
+function selectAllRecordings() {
+  recordings.forEach(r => selectedRecordings.add(r.path));
+  renderRecordings();
+}
+
+function deselectAllRecordings() {
+  selectedRecordings.clear();
+  renderRecordings();
+}
+
+async function deleteSelected() {
+  const paths = [...selectedRecordings];
+  if (!paths.length) return toast('Nothing selected', 'error');
+  if (!confirm(`Delete ${paths.length} file(s)?`)) return;
+  try {
+    await api('/api/recordings/delete', { method: 'POST', body: JSON.stringify({ paths }) });
+    selectedRecordings.clear();
+    toast('Deleted', 'success');
+    loadRecordings();
+  } catch (e) { toast('Delete failed', 'error'); }
+}
+
+async function remuxSingle(path) {
+  try {
+    const res = await api('/api/recordings/remux', { method: 'POST', body: JSON.stringify({ paths: [path] }) });
+    toast('Remux job started', 'info');
+    openJobsPanel();
+    pollJobs();
+  } catch (e) { toast('Remux failed: ' + e.message, 'error'); }
+}
+
+async function remuxSelected() {
+  const paths = [...selectedRecordings].filter(p => p.toLowerCase().endsWith('.mkv'));
+  if (!paths.length) return toast('No MKV files selected', 'error');
+  try {
+    await api('/api/recordings/remux', { method: 'POST', body: JSON.stringify({ paths }) });
+    selectedRecordings.clear();
+    toast('Remux job started', 'info');
+    openJobsPanel();
+    pollJobs();
+  } catch (e) { toast('Remux failed: ' + e.message, 'error'); }
+}
+
+// ── Editor ───────────────────────────────────────────────────────────────
+
+async function openEditor(path) {
+  editorFile = path;
+  trimStart = null;
+  trimEnd = null;
+  videoDuration = 0;
+
+  const overlay = document.getElementById('editor-overlay');
+  overlay.classList.add('open');
+
+  const name = path.split('/').pop();
+  document.getElementById('editor-title').textContent = name;
+  document.getElementById('player-loading').style.display = 'flex';
+  document.getElementById('clip-title').value = name.replace(/\.[^.]+$/, '');
+  document.getElementById('trim-start-input').value = '';
+  document.getElementById('trim-end-input').value = '';
+  document.getElementById('trim-display').textContent = '';
+  document.getElementById('trim-region').style.display = 'none';
+  document.getElementById('audio-tracks').innerHTML = '<div style="font-size:.82rem;color:var(--text-dim)">Loading...</div>';
+
+  // Get preview
+  try {
+    const preview = await api(`/api/recordings/preview?path=${encodeURIComponent(path)}`);
+    const video = document.getElementById('editor-video');
+    const streamUrl = `/api/stream?path=${encodeURIComponent(preview.path)}`;
+    video.src = streamUrl;
+    video.load();
+
+    video.onloadedmetadata = () => {
+      videoDuration = video.duration;
+      document.getElementById('player-loading').style.display = 'none';
+      updateTimeDisplay();
+    };
+    video.onerror = () => {
+      document.getElementById('player-loading').textContent = 'Preview failed to load';
+    };
+  } catch (e) {
+    document.getElementById('player-loading').textContent = 'Preview generation failed';
+  }
+
+  // Get file info for audio tracks
+  try {
+    editorInfo = await api(`/api/recordings/info?path=${encodeURIComponent(path)}`);
+    renderAudioTracks(editorInfo.audio_streams || []);
+  } catch (e) {
+    document.getElementById('audio-tracks').innerHTML = '<div style="color:var(--red);font-size:.82rem">Failed to load info</div>';
+  }
+}
+
+function closeEditor() {
+  const video = document.getElementById('editor-video');
+  video.pause();
+  video.src = '';
+  document.getElementById('editor-overlay').classList.remove('open');
+  editorFile = null;
+  editorInfo = null;
+}
+
+function renderAudioTracks(tracks) {
+  const el = document.getElementById('audio-tracks');
+  if (!tracks.length) {
+    el.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim)">No audio tracks</div>';
+    return;
+  }
+  el.innerHTML = tracks.map((t, i) => `
+    <div class="audio-track">
+      <input type="checkbox" checked data-track-index="${t.index}" id="atrack-${i}">
+      <span class="track-label" title="${esc(t.title)} (${t.codec}, ${t.channels}ch)">${esc(t.title)}</span>
+      <input type="number" class="gain-input" value="1.0" step="0.1" min="0" max="5" data-gain-index="${t.index}" title="Gain">
+    </div>
+  `).join('');
+}
+
+function togglePlay() {
+  const video = document.getElementById('editor-video');
+  if (video.paused) {
+    video.play();
+    document.getElementById('play-btn').innerHTML = '&#x23F8;';
+  } else {
+    video.pause();
+    document.getElementById('play-btn').innerHTML = '&#x25B6;';
+  }
+}
+
+function editorSeek(delta) {
+  const video = document.getElementById('editor-video');
+  video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + delta));
+}
+
+function setTrimStart() {
+  const video = document.getElementById('editor-video');
+  trimStart = video.currentTime;
+  document.getElementById('trim-start-input').value = trimStart.toFixed(2);
+  updateTrimUI();
+}
+
+function setTrimEnd() {
+  const video = document.getElementById('editor-video');
+  trimEnd = video.currentTime;
+  document.getElementById('trim-end-input').value = trimEnd.toFixed(2);
+  updateTrimUI();
+}
+
+function clearTrim() {
+  trimStart = null;
+  trimEnd = null;
+  document.getElementById('trim-start-input').value = '';
+  document.getElementById('trim-end-input').value = '';
+  document.getElementById('trim-region').style.display = 'none';
+  document.getElementById('trim-display').textContent = '';
+}
+
+function onTrimInputChange() {
+  const s = parseFloat(document.getElementById('trim-start-input').value);
+  const e = parseFloat(document.getElementById('trim-end-input').value);
+  trimStart = isNaN(s) ? null : s;
+  trimEnd = isNaN(e) ? null : e;
+  updateTrimUI();
+}
+
+function updateTrimUI() {
+  const region = document.getElementById('trim-region');
+  const display = document.getElementById('trim-display');
+
+  if (trimStart !== null && trimEnd !== null && videoDuration > 0) {
+    const left = (trimStart / videoDuration) * 100;
+    const width = ((trimEnd - trimStart) / videoDuration) * 100;
+    region.style.display = 'block';
+    region.style.left = left + '%';
+    region.style.width = Math.max(0, width) + '%';
+    display.textContent = `${formatTime(trimStart)} - ${formatTime(trimEnd)} (${formatTime(trimEnd - trimStart)})`;
+  } else if (trimStart !== null) {
+    display.textContent = `Start: ${formatTime(trimStart)}`;
+    region.style.display = 'none';
+  } else if (trimEnd !== null) {
+    display.textContent = `End: ${formatTime(trimEnd)}`;
+    region.style.display = 'none';
+  } else {
+    region.style.display = 'none';
+    display.textContent = '';
+  }
+}
+
+function updateTimeDisplay() {
+  const video = document.getElementById('editor-video');
+  document.getElementById('time-display').textContent =
+    `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
+
+  // Update seek bar
+  if (!seekDragging && video.duration > 0) {
+    const pct = (video.currentTime / video.duration) * 100;
+    document.getElementById('seek-fill').style.width = pct + '%';
+    document.getElementById('seek-handle').style.left = pct + '%';
+  }
+}
+
+// Video timeupdate
+document.getElementById('editor-video').addEventListener('timeupdate', updateTimeDisplay);
+document.getElementById('editor-video').addEventListener('ended', () => {
+  document.getElementById('play-btn').innerHTML = '&#x25B6;';
+});
+
+// Seek bar interaction
+(function() {
+  const track = document.getElementById('seek-track');
+  const handle = document.getElementById('seek-handle');
+  const video = document.getElementById('editor-video');
+
+  function seekTo(e) {
+    const rect = track.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    video.currentTime = pct * video.duration;
+    document.getElementById('seek-fill').style.width = (pct * 100) + '%';
+    handle.style.left = (pct * 100) + '%';
+  }
+
+  track.addEventListener('mousedown', (e) => { seekDragging = true; seekTo(e); });
+  handle.addEventListener('mousedown', (e) => { seekDragging = true; e.preventDefault(); });
+  document.addEventListener('mousemove', (e) => { if (seekDragging) seekTo(e); });
+  document.addEventListener('mouseup', () => { seekDragging = false; });
+})();
+
+// ── Create clip ──────────────────────────────────────────────────────────
+
+async function createClip() {
+  if (!editorFile) return;
+  const start = trimStart !== null ? trimStart : 0;
+  const end = trimEnd !== null ? trimEnd : videoDuration;
+  if (end <= start) return toast('Invalid trim range', 'error');
+
+  const selectedTracks = [];
+  const gains = {};
+  document.querySelectorAll('#audio-tracks input[type="checkbox"]:checked').forEach(cb => {
+    const idx = parseInt(cb.dataset.trackIndex);
+    selectedTracks.push(idx);
+    const gainInput = document.querySelector(`input[data-gain-index="${idx}"]`);
+    if (gainInput) gains[idx] = parseFloat(gainInput.value) || 1.0;
+  });
+
+  const body = {
+    source_path: editorFile,
+    title: document.getElementById('clip-title').value || 'clip',
+    game: document.getElementById('clip-game').value || '',
+    start,
+    end,
+    mode: document.getElementById('clip-mode').value,
+    container: document.getElementById('clip-container').value,
+    audio_mode: document.getElementById('clip-audio-mode').value,
+    selected_tracks: selectedTracks,
+    gains,
+  };
+
+  const btn = document.getElementById('create-clip-btn');
+  btn.disabled = true;
+  btn.textContent = 'Exporting...';
+
+  try {
+    const res = await api('/api/clips', { method: 'POST', body: JSON.stringify(body) });
+    toast(`Clip created: ${res.name}`, 'success');
+    closeEditor();
+  } catch (e) {
+    toast('Export failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Create Clip';
+  }
+}
+
+// ── Clips ────────────────────────────────────────────────────────────────
+
+async function loadClips() {
+  try {
+    clips = await api('/api/clips');
+    renderClips();
+  } catch (e) { toast('Failed to load clips', 'error'); }
+}
+
+function renderClips() {
+  const el = document.getElementById('clips-list');
+  if (!clips.length) {
+    el.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">&#127916;</div>
+        <h3>No clips yet</h3>
+        <p>Open a recording and create your first clip.</p>
+      </div>`;
+    return;
+  }
+  el.innerHTML = clips.map(c => {
+    const meta = c.meta || {};
+    const modeLabel = meta.mode === 'fast' ? 'Fast Cut' : meta.mode === 'accurate' ? 'Accurate' : '';
+    return `
+    <div class="clip-card">
+      <input type="checkbox" ${selectedClips.has(c.path) ? 'checked' : ''}
+             onchange="toggleClipSelect('${esc(c.path)}', this.checked)" style="accent-color:var(--accent)">
+      <div class="clip-info">
+        <div class="clip-name" title="${esc(c.name)}">${esc(c.name)}</div>
+        <div class="clip-meta">
+          ${formatSize(c.size)} &middot; ${formatDate(c.modified)}
+          ${meta.game ? ` &middot; ${esc(meta.game)}` : ''}
+          ${modeLabel ? ` &middot; ${modeLabel}` : ''}
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="playClip('${esc(c.path)}')">&#x25B6; Play</button>
+      <a class="btn btn-secondary btn-sm" href="/api/clips/download?path=${encodeURIComponent(c.path)}" download>&#x2B07; Download</a>
+    </div>`;
+  }).join('');
+}
+
+function toggleClipSelect(path, checked) {
+  if (checked) selectedClips.add(path); else selectedClips.delete(path);
+}
+
+function selectAllClips() {
+  clips.forEach(c => selectedClips.add(c.path));
+  renderClips();
+}
+
+function deselectAllClips() {
+  selectedClips.clear();
+  renderClips();
+}
+
+async function deleteSelectedClips() {
+  const paths = [...selectedClips];
+  if (!paths.length) return toast('Nothing selected', 'error');
+  if (!confirm(`Delete ${paths.length} clip(s)?`)) return;
+  try {
+    await api('/api/clips/delete', { method: 'POST', body: JSON.stringify({ paths }) });
+    selectedClips.clear();
+    toast('Clips deleted', 'success');
+    loadClips();
+  } catch (e) { toast('Delete failed', 'error'); }
+}
+
+function playClip(path) {
+  openEditor(path);
+}
+
+// ── Folder Browser ───────────────────────────────────────────────────────
+
+async function openFolderBrowser(target) {
+  browserTarget = target;
+  browserPath = '/';
+  document.getElementById('browser-overlay').classList.add('open');
+  await browseTo('/');
+}
+
+function closeFolderBrowser() {
+  document.getElementById('browser-overlay').classList.remove('open');
+}
+
+async function browseTo(path) {
+  browserPath = path;
+  try {
+    const data = await api(`/api/browse?path=${encodeURIComponent(path)}`);
+    document.getElementById('folder-current').textContent = data.current;
+    const list = document.getElementById('folder-list');
+    if (!data.directories.length) {
+      list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim)">No subdirectories</div>';
+    } else {
+      list.innerHTML = data.directories.map(d => `
+        <div class="folder-item" onclick="browseTo('${esc(d.path)}')">
+          <span class="icon">&#128193;</span>
+          <span>${esc(d.name)}</span>
+        </div>
+      `).join('');
+    }
+  } catch (e) {
+    toast('Browse failed: ' + e.message, 'error');
+  }
+}
+
+function folderGoUp() {
+  const parts = browserPath.replace(/\/$/, '').split('/');
+  parts.pop();
+  const parent = parts.join('/') || '/';
+  browseTo(parent);
+}
+
+function selectFolder() {
+  if (browserTarget === 'source') {
+    document.getElementById('new-source-path').value = browserPath;
+  } else if (browserTarget === 'clips') {
+    document.getElementById('clips-folder').value = browserPath;
+    saveSettings();
+  }
+  closeFolderBrowser();
+}
+
+// ── Jobs Panel ───────────────────────────────────────────────────────────
+
+function toggleJobsPanel() {
+  document.getElementById('jobs-panel').classList.toggle('open');
+  if (document.getElementById('jobs-panel').classList.contains('open')) {
+    pollJobs();
+  }
+}
+
+function openJobsPanel() {
+  document.getElementById('jobs-panel').classList.add('open');
+}
+
+async function pollJobs() {
+  try {
+    const jobs = await api('/api/jobs');
+    renderJobs(jobs);
+
+    // Keep polling if any are running
+    const hasRunning = jobs.some(j => j.status === 'running' || j.status === 'pending');
+    if (hasRunning) {
+      clearTimeout(jobsPollTimer);
+      jobsPollTimer = setTimeout(pollJobs, 2000);
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function renderJobs(jobs) {
+  const el = document.getElementById('jobs-list');
+  if (!jobs.length) {
+    el.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-dim);font-size:.85rem">No jobs yet</div>';
+    return;
+  }
+  el.innerHTML = jobs.map(j => `
+    <div class="job-item">
+      <span class="job-status ${j.status}">${j.status}</span>
+      <span style="font-size:.8rem;color:var(--text-dim);margin-left:8px">${j.total_files} file(s)</span>
+      <div class="job-progress">
+        <div class="job-progress-fill" style="width:${j.progress}%"></div>
+      </div>
+      <div class="job-files">
+        ${j.files.map(f => {
+          const name = f.source.split('/').pop();
+          return `<div class="job-file-line ${f.status}">${name}: ${f.status}${f.error ? ' - ' + esc(f.error) : ''}</div>`;
+        }).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Escape helper ────────────────────────────────────────────────────────
+
+function esc(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+}
+
+// ── Keyboard shortcuts ──────────────────────────────────────────────────
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+
+  if (document.getElementById('editor-overlay').classList.contains('open')) {
+    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+    if (e.code === 'ArrowLeft') { e.preventDefault(); editorSeek(-5); }
+    if (e.code === 'ArrowRight') { e.preventDefault(); editorSeek(5); }
+    if (e.code === 'KeyI') setTrimStart();
+    if (e.code === 'KeyO') setTrimEnd();
+    if (e.code === 'Escape') closeEditor();
+  }
+});
+
+// ── Init ─────────────────────────────────────────────────────────────────
+
+(async function init() {
+  await loadSources();
+  await loadRecordings();
+})();
+</script>
+</body>
+</html>
