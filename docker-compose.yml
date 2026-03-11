@@ -5,7 +5,7 @@ services:
     build: .
     container_name: webclipper
     ports:
-      - "5000:5000"
+      - "9069:5000"
     volumes:
       - ./data:/data
       # Mount your recordings folders here:
