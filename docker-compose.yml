@@ -8,8 +8,7 @@ services:
       - "9069:5000"
     volumes:
       - ./data:/data
-      # Mount your recordings folders here:
-      # - /path/to/your/recordings:/mnt/recordings
+      - /volume1/Recordings:/mnt/Recordings
     restart: unless-stopped
     environment:
       - TZ=America/New_York
